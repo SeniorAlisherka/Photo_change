@@ -93,8 +93,8 @@ def rename(jpg_path, new_name, manual_folder):
 
 
 # --- Основная программа ---
-# folder_name = input("Введите имя папки, где нужно обработать фото: ")
-folder_name = "Фото самозапись"
+folder_name = input("Введите имя папки, где нужно обработать фото: ")
+# folder_name = "Фото самозапись"
 df = pd.read_excel(os.path.join(folder_name, "Список.xlsx"))
 link_column = "Ссылка, содержащая название файла до обработки"
 name_column = "Название файла после обработки"
