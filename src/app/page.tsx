@@ -1,5 +1,5 @@
-import PhotoConverter from "@/components/photo-converter";
+import ConverterTabs from "@/components/converter-tabs";
 
 export default function HomePage() {
-  return <PhotoConverter />;
+  return <ConverterTabs />;
 }

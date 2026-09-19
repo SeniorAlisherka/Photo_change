@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Фотообработка — сжатие и переименование фото",
+  title: "Фотообработка и контакты из Excel",
   description:
-    "Преобразование, сжатие и переименование фотографий по списку из Excel. Файлы остаются на вашем устройстве.",
+    "Обработка фотографий и создание VCF-файла контактов по таблице Excel. Файлы остаются на вашем устройстве.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

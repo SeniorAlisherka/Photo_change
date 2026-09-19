@@ -1,6 +1,6 @@
 # Photo Change
 
-A Next.js + TypeScript interface for the original Python photo-processing script. The UI uses shadcn's Base UI components (`base-nova`), including Attachment, Progress, and Accordion. There are no API routes, server actions, file uploads, or external conversion services.
+A Next.js + TypeScript app with two Russian-language tools: photo processing and Excel-to-VCF contact export. The UI uses shadcn's Base UI components (`base-nova`), including Tabs, Attachment, Progress, and Accordion. Both tabs retain their selections and results when switching. There are no API routes, server actions, file uploads, or external conversion services.
 
 ## Run locally
 
@@ -20,7 +20,7 @@ npm start
 
 Import the repository into Vercel as a Next.js project. Use `npm run build` as the build command. `next.config.ts` sets `output: "export"`, so the build creates a static website in `out/`. No environment variables, database, or server functions are required. Deploy application code only; keep private photo fixtures outside the repository.
 
-## Input
+## Photo input
 
 Select two sources separately:
 
@@ -59,18 +59,42 @@ The original files on the device are never changed. A failure while reading/copy
 
 The app imposes no fixed limits on input bytes, file count, or image resolution. Photos are processed one at a time. Available browser memory, supported image dimensions, workbook parsing, and the accumulated output ZIP still bound what a device can process; arbitrarily large batches are not guaranteed. The 500 KiB output target is part of the photo-conversion requirements, not an input limit.
 
+## Contacts
+
+The `Контакты` tab accepts an `.xlsx` workbook. Its first worksheet must have these headers in row 1, in any order:
+
+- `ФИО`
+- `Короткое название программы`
+- `Год обучения`
+- `Номер телефона`
+- `Почта`
+
+Each row becomes one contact. Full `ФИО` is stored as the **given name**; program plus a space plus academic year is stored as the **family name**. For example, `Иванов Иван Иванович`, `ОФД`, and `2025-2026` produce:
+
+```text
+N:ОФД 2025-2026;Иванов Иван Иванович;;;
+FN:Иванов Иван Иванович ОФД 2025-2026
+```
+
+Nonempty phone/email cells become `TEL;TYPE=CELL` / `EMAIL;TYPE=INTERNET`. All five headers are required; phone/email values may be blank per contact. One number/address per cell is supported. Phone spacing, parentheses, and hyphens are removed while preserving digits and a leading `+`; no country code is guessed. Store phone columns as text in Excel to preserve any leading zeros and plus signs.
+
+A separate Web Worker parses the workbook locally and generates UTF-8 vCard 3.0 with CRLF line endings, escaped field separators, and Unicode-safe line folding. Blank rows are ignored. Incomplete names, invalid phone/email values, and Excel error cells are reported with worksheet row numbers and excluded from export. Missing/duplicate headers or unreadable files produce Russian errors. The UI previews the first five contacts and downloads every valid contact in one `.vcf` file. It never imports contacts into an address book automatically.
+
 ## Structure
 
 ```text
 src/app/                         Small page, layout, and global styles
-src/components/                  Converter, file/folder pickers, instructions, and results UI
+src/components/                  Tabs, converters, file/folder pickers, instructions, and results UI
 src/components/ui/               Official shadcn Base UI components
-src/hooks/use-photo-converter.ts Worker lifecycle and UI state
+src/hooks/                       Worker lifecycles, UI state, and download cleanup
 src/lib/photo-mapping.ts         Worksheet validation and filename mapping
 src/lib/photo-image.ts           Browser JPEG encoding and HEIC decoding
 src/lib/photo-processing.ts      File inspection, conversion, and ZIP packaging
 src/lib/photo-converter.worker.ts Worker message handler
-src/lib/photo-converter-types.ts Shared messages, constants, and report types
+src/lib/photo-converter-types.ts Photo messages, constants, and report types
+src/lib/contact-vcard.ts         Contact worksheet validation and vCard serialization
+src/lib/contact-converter.worker.ts Contact worker message handler
+src/lib/contact-converter-types.ts Contact messages, columns, and result types
 ```
 
 Dependencies were installed from their current releases. SheetJS uses the official CDN release because the npm `xlsx` package is outdated. All runtime libraries are bundled with the app; photos are never sent to a CDN.
@@ -92,4 +116,4 @@ PHOTO_FIXTURE_DIR='/path/to/Фото самозапись' \
 npm run test:browser
 ```
 
-Tests exercise actual worker conversion and ZIP downloads, preserve originals byte-for-byte, check JPEG dimensions/size, mapping errors, corrupt input, selection order, cancellation/replacement, duplicate source names, folders without photos, and outgoing requests. The optional saved-dataset test checks the original 93 converted / 13 unmatched result, including HEIC. Fixtures are loaded from disk during tests and never deployed.
+Tests exercise actual worker conversion and ZIP downloads, preserve originals byte-for-byte, check JPEG dimensions/size, mapping errors, corrupt input, selection order, cancellation/replacement, duplicate source names, folders without photos, and outgoing requests. The optional saved-dataset test checks the original 93 converted / 13 unmatched result, including HEIC. Fixtures are loaded from disk during tests and never deployed. Contact tests use synthetic data to verify actual VCF downloads, name mapping, phone/email values, escaping and UTF-8 folding, invalid rows, and tab state preservation.
